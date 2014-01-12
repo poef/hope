@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+	<script type="text/javascript" src="hope.js"></script>
+	<script type="text/javascript" src="hope.parse.hope.js"></script>
+	<script type="text/javascript" src="hope.render.html.js"></script>
+	<script type="text/javascript" src="hope.editor.js"></script>
+	<script type="text/javascript" src="hope.editor.range.js"></script>
+</head>
+<body>
+<textarea id="content">Dit is een kopje.
+Dit is een paragraaf.</textarea>
+<textarea id="markup">0-17:h1
+18-40:p
+</textarea>
+<textarea id="renderedSource"></textarea>
+<div id="output"></div>
+<script type="text/javascript">
+	hope.editor.init( document.getElementById('content'), document.getElementById('markup'), document.getElementById('output'), document.getElementById('renderedSource'));	
+</script>
+</body>
+</html>
