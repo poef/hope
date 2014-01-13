@@ -2,17 +2,25 @@ hope.register( 'hope.parse.hope', function() {
 
 
 	this.parseMarkup = function( markup ) {
-		var reMarkupLine = /^([0-9]+)-([0-9]+):(.*)$/m;
+		var reMarkupLine = /^([0-9]+)(-([0-9]+))?:(.*)$/m;
 		var markupList = [];
 		var matches = [];
 		while ( matches = markup.match(reMarkupLine) ) {
-			markupList.push({
-				start: parseInt(matches[1]),
-				end: parseInt(matches[2]),
-				markup: matches[3],
-				index: markupList.length
-			});
-			markup = markup.substr( matches[0].length );
+			if ( matches[3] ) {
+				markupList.push({
+					start: parseInt(matches[1]),
+					end: parseInt(matches[3]),
+					markup: matches[4],
+					index: markupList.length
+				});
+			} else {
+				markupList.push({
+					insert: parseInt( matches[1] ),
+					markup: matches[4],
+					index: markupList.length
+				});
+			}
+			markup = markup.substr( matches[0].length + 1 );
 		}
 		return markupList;
 	}
@@ -20,8 +28,12 @@ hope.register( 'hope.parse.hope', function() {
 	this.getRelativeMarkup = function( markupList ) {
 		var markupLinearList = [];
 		for ( var i=0, l=markupList.length; i<l; i++ ) {
-			markupLinearList.push( { type: 'start', offset: markupList[i].start, index: i });
-			markupLinearList.push( { type: 'end', offset: markupList[i].end, index: i });
+			if ( typeof markupList[i].start != 'undefined' ) {
+				markupLinearList.push( { type: 'start', offset: markupList[i].start, index: i });
+				markupLinearList.push( { type: 'end', offset: markupList[i].end, index: i });
+			} else {
+				markupLinearList.push( { type: 'insert', offset: markupList[i].insert, index: i });
+			}
 		}
 		markupLinearList.sort(function(a,b) {
 			if ( a.offset < b.offset ) {
@@ -70,8 +82,14 @@ hope.register( 'hope.parse.hope', function() {
 	this.getMarkupSet = function( markupList, range ) {
 		var markupSet = [];
 		for ( var i=0,l=markupList.length; i<l; i++ ) {
-			if ( markupList[i].start <= range.end && markupList[i].end > range.start ) {
-				markupSet.push( markupList[i] );
+			if ( typeof markupList[i].start != 'undefined' ) {
+				if ( markupList[i].start <= range.end && markupList[i].end > range.start ) {
+					markupSet.push( markupList[i] );
+				}
+			} else {
+				if ( markupList[i].insert <= range.end && markupList[i].insert >= range.start ) {
+					markupSet.push( markupList[i] );
+				}
 			}
 		}
 		return markupSet;

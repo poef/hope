@@ -2,15 +2,22 @@ hope.register( 'hope.parse.hope', function() {
 
 
 	this.parseMarkup = function( markup ) {
-		var reMarkupLine = /^([0-9]+)-([0-9]+):(.*)$/m;
+		var reMarkupLine = /^([0-9]+)(-([0-9]+))?:(.*)$/m;
 		var markupList = [];
 		var matches = [];
 		while ( matches = markup.match(reMarkupLine) ) {
-			markupList.push({
-				start: parseInt(matches[1]),
-				end: parseInt(matches[2]),
-				markup: matches[3]
-			});
+			if ( matches[2] ) {
+				markupList.push( {
+					start: parseInt( matches[1] ),
+					end: parseInt( matches[3] ),
+					markup: matches[4]
+				} );
+			} else {
+				markupList.push( {
+					insert: parseInt( matches[1] ),
+					markup: matches[4]
+				} );
+			}
 			markup = markup.substr( matches[0].length );
 		}
 		return markupList;
@@ -19,8 +26,12 @@ hope.register( 'hope.parse.hope', function() {
 	this.getLinearMarkup = function( markupList ) {
 		var markupLinearList = [];
 		for ( var i=0, l=markupList.length; i<l; i++ ) {
-			markupLinearList.push( { action: 'start', offset: markupList[i].start, entry: i });
-			markupLinearList.push( { action: 'end', offset: markupList[i].end, entry: i });
+			if ( typeof markupList[i].start != 'undefined' ) {
+				markupLinearList.push( { action: 'start', offset: markupList[i].start, entry: i });
+				markupLinearList.push( { action: 'end', offset: markupList[i].end, entry: i });
+			} else {
+				markupLinearList.push( { action: 'insert', offset: markupList[i].insert, entry: i });
+			}
 		}
 		markupLinearList.sort(function(a,b) {
 			if ( a.offset < b.offset ) {

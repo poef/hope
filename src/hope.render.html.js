@@ -216,14 +216,23 @@ hope.register( 'hope.render.html', function() {
 		while ( relativeMarkup.length ) {
 
 			var markupChangeSet = relativeMarkup.shift();
+			var markupAdded     = []; // list of markup added in this change set
+			var markupSetOnce   = []; // list of markup that can not have children, needs no close
 			for ( i=0, l=markupChangeSet.markup.length; i<l; i++ ) {
 				var markupChange = markupChangeSet.markup[i];
-				if ( markupChange.type == 'start' ) {
-					markupSet.push( markupList[ markupChange.index ] );
-				} else {
-					markupSet = markupSet.filter( function( element ) {
-						return element.index != markupChange.index;
-					} );
+				switch ( markupChange.type ) {
+					case 'start':
+						markupSet.push( markupList[ markupChange.index ] );
+						markupAdded.push( markupChange.index );
+					break;
+					case 'end':
+						markupSet = markupSet.filter( function( element ) {
+							return element.index != markupChange.index;
+						} );
+					break;
+					case 'insert':
+						markupSetOnce.push( markupList[ markupChange.index ] );
+					break;
 				}
 			}
 
@@ -236,10 +245,11 @@ hope.register( 'hope.render.html', function() {
 			offset = 0;
 
 			// calculate the valid markup stack from a given set
-			var newMarkupStack = this.getMarkupStack( markupSet );
+			var newMarkupStack = this.getMarkupStack( markupSet.concat( markupSetOnce ) );
 			// calculate the difference - how to get from stack one to stack two with the minimum of tags
 			var diff = this.getMarkupDiff( markupStack, newMarkupStack );
-			// FIXME: hoe om te gaan met img tags en andere autoClosing tags? of tags zonder range? 0-0:p?
+			// remove autoclosing markup from the newMarkupStack
+			var newMarkupStack = this.getMarkupStack( markupSet );
 			var diffHTML = this.renderMarkupDiff( diff );
 			renderedHTML += diffHTML;
 			markupStack = newMarkupStack;

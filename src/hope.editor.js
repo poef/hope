@@ -8,7 +8,7 @@ hope.register( 'hope.editor', function() {
 			if ( entry.start >= position ) {
 				entry.start += length;
 			}
-			if ( entry.end > position ) {
+			if ( entry.end >= position ) {
 				entry.end += length;
 			}
 		}
@@ -24,7 +24,17 @@ hope.register( 'hope.editor', function() {
 	}
 
 	self.updateOutput = function() {
-		var output = hope.render.html.render( self.content.value, self.markup.value );
+		var markup = self.markup.value;
+		var range = hope.editor.range.getRange( self.content );
+		if ( range.start != range.end ) {
+			markup = range.start + '-' + range.end + ':span class="selection"\n' + markup;
+		} else {
+			var cursor = hope.editor.range.getCursor( self.content );
+			if ( cursor ) {
+				markup = cursor + ':img class="cursor"\n' + markup;
+			}
+		}
+		var output = hope.render.html.render( self.content.value, markup );
 		self.output.innerHTML = output;
 		if ( self.source ) {
 			self.source.innerText = output;
@@ -39,6 +49,7 @@ hope.register( 'hope.editor', function() {
 		self.output     = outputEl;
 		self.source     = sourceEl;
 		self.markupList = hope.parse.hope.parseMarkup( self.markup.value );
+		self.updateOutput();
 
 		//FIXME: contentEl and markupEl should be hidden, keypresses and selections should be handled on the output element
 
@@ -76,20 +87,17 @@ hope.register( 'hope.editor', function() {
 				case 8: //backspace
 					if ( range.start > 0 || range.end > 0 ) {
 						self.updateMarkup( range.end, -length );
-						setTimeout( function() {
-							self.updateOutput();
-						}, 0);
 					}
 				break;
 				case 46: // delete
 					if ( range.end < contentEl.value.length || range.start < contentEl.value.length ) {
 						self.updateMarkup( range.end+1, -length );
-						setTimeout( function() {
-							self.updateOutput();
-						}, 0);
 					}
 				break;
 			}
+			setTimeout( function() {
+				self.updateOutput();
+			}, 0);
 		}
 
 		self.markup.onkeyup = function(evt) {
@@ -151,12 +159,17 @@ hope.register( 'hope.editor', function() {
 
 		self.cleanMarkup = function() {
 			// remove empty entries with no attributes
+			// FIXME: needs a trim()
+			// FIXME: any empty entry may be deleted, attributes or no, unless it is an autoclosing entry
 			var newMarkupList = [];
 			for ( var i=0, l=self.markupList.length; i<l; i++ ) {
 				var entry = self.markupList[i];
-				if ( entry.start == entry.end ) {
+				if ( typeof entry.start == 'undefined' ) {
+					entry.index = newMarkupList.length;
+					newMarkupList.push( entry );	
+				} else if ( entry.start == entry.end ) {
 					var markupTag = hope.render.html.getMarkupTag( entry.markup );
-					if ( markupTag == entry.markup ) {
+					if ( markupTag == entry.markup && hope.render.html.rules.noChildren.indexOf( markupTag) == -1 ) {
 						//self.markupList[i] = null;
 					} else {
 						entry.index = newMarkupList.length;
@@ -179,13 +192,15 @@ hope.register( 'hope.editor', function() {
 					if ( index != -1 ) {
 						// overlapping markup
 						var overlappingMarkup = newMarkupList[ index ];
-						if ( overlappingMarkup.start > entry.start ) {
-							overlappingMarkup.start = entry.start;
+						if ( typeof overlappingMarkup.start != 'undefined' ) {
+							if ( overlappingMarkup.start > entry.start ) {
+								overlappingMarkup.start = entry.start;
+							}
+							if ( overlappingMarkup.end < entry.end ) {
+								overlappingMarkup.end = entry.end;
+							}
+							newMarkupList[ index ] = null;
 						}
-						if ( overlappingMarkup.end < entry.end ) {
-							overlappingMarkup.end = entry.end;
-						}
-						newMarkupList[ index ] = null;
 					} else {
 						markupFound[ index ] = entry.markup;
 					}
@@ -197,12 +212,20 @@ hope.register( 'hope.editor', function() {
 			for ( var i = 0, l = newMarkupList.length; i<l; i++ ) {
 				if ( newMarkupList[i] ) {
 					var entry = newMarkupList[i];
-					newMarkupList2.push( {
-						start: entry.start,
-						end: entry.end,
-						markup: entry.markup,
-						index: newMarkupList2.length
-					});
+					if ( typeof entry.start != 'undefined' ) {
+						newMarkupList2.push( {
+							start: entry.start,
+							end: entry.end,
+							markup: entry.markup,
+							index: newMarkupList2.length
+						});
+					} else {
+						newMarkupList2.push( {
+							insert: entry.insert,
+							markup: entry.markup,
+							index: newMarkupList2.length
+						});
+					}
 				}
 			}
 

@@ -1,11 +1,33 @@
 <!doctype html>
 <html>
 <head>
-	<script type="text/javascript" src="hope.js"></script>
-	<script type="text/javascript" src="hope.parse.hope.js"></script>
-	<script type="text/javascript" src="hope.render.html.js"></script>
-	<script type="text/javascript" src="hope.editor.js"></script>
-	<script type="text/javascript" src="hope.editor.range.js"></script>
+	<script type="text/javascript" src="../src/hope.js"></script>
+	<script type="text/javascript" src="../src/hope.parse.hope.js"></script>
+	<script type="text/javascript" src="../src/hope.render.html.js"></script>
+	<script type="text/javascript" src="../src/hope.editor.js"></script>
+	<script type="text/javascript" src="../src/hope.editor.range.js"></script>
+	<style type="text/css">
+		img.cursor {
+			position: absolute;
+			border-left: 1px solid transparent;
+			width: 1px;
+			height: 1.2em;
+			overflow: hidden;
+			-webkit-animation: blinkempty 1s infinite;
+			animation: blinkempty 1s infinite;
+		}
+		@-webkit-keyframes blinkempty {
+			50% { border-left: 1px solid #333 ; }
+		}
+		@keyframes blinkempty {
+			50% { border-left: 1px solid #333 ; }
+		}
+		span.selection {
+			color: white;
+			background-color: rgb(0,122,255);
+			white-space: pre-wrap;
+		}
+	</style>
 </head>
 <body>
 <textarea id="content">Dit is een kopje.
