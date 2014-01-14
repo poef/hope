@@ -46,6 +46,12 @@ var hope = this.hope = ( function( global ) {
 		return moduleInstance;
 	};
 
+	hope.Exception = function(message, code) {
+		this.message = message;
+		this.code = code;
+		this.name = 'hope.Exception';
+	}
+
 	return hope;
 
 } )(this);
