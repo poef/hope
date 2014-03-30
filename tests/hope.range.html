@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+	<script type="text/javascript" src="../src/hope.js"></script>
+	<script type="text/javascript" src="../src/hope.test.js"></script>
+	<script type="text/javascript" src="../src/hope.range.js"></script>
+</head>
+<body>
+<div id="hopeTestOutput"></div>
+<script type="text/javascript">
+
+	var test = hope.test.create();
+
+	test.testCollapse = function() {
+		var range = hope.range.create( 5, 20 );
+		range.collapse();
+		test.assertTrue( range.end == 5 );
+		test.assertTrue( range.start == range.end );
+	}
+
+	test.testCut = function() {
+		var range = hope.range.create( 5, 20 );
+		var newRange = range.cut( hope.range.create( 15, 25 ) );
+		test.assertTrue( range.start == 5);
+		test.assertTrue( range.end == 15 );
+		test.assertTrue( newRange.end == 5 );
+		test.assertTrue( newRange.start == 0);
+
+		var range = hope.range.create( 5, 20 );
+		newRange = range.cut( hope.range.create( 0, 10 ) );
+		test.assertTrue( range.start == 5 );
+		test.assertTrue( range.end == 15 );
+		test.assertTrue( newRange.end == 5 );
+		test.assertTrue( newRange.start == 0);
+
+		var range = hope.range.create( 5, 20 );
+		newRange = range.cut( hope.range.create( 10, 15 ) );
+		test.assertTrue( range.start == 5 );
+		test.assertTrue( range.end == 15 );
+		test.assertTrue( newRange.end == 5 );
+		test.assertTrue( newRange.start == 0);
+
+		var range = hope.range.create( 5, 20 );
+		newRange = range.cut( hope.range.create( 20, 15 ) );
+		test.assertTrue( range.start == 5 );
+		test.assertTrue( range.end == 20 );
+		test.assertTrue( newRange.end == 0 );
+		test.assertTrue( newRange.start == 0);
+	}
+
+	test.testCompare = function() {
+		var range = hope.range.create( 5, 20 );
+		var bigRange = hope.range.create( 15, 25 );
+		var smallRange = hope.range.create( 0, 15 );
+		var middleRange = hope.range.create( 10, 15 );
+		test.assertTrue( range.compare( bigRange ) == -1 );
+		test.assertTrue( range.compare( smallRange ) == 1 );
+		test.assertTrue( range.compare( middleRange ) == -1 );
+	}
+
+	test.run();
+
+</script>
+</body>
+</html>
