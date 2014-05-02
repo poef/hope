@@ -118,11 +118,11 @@ hope.register( 'hope.render.html', function() {
 
 		// make sure any obligatory child is applied
 		// FIXME: for readable html you should allow whitespace to be outside an obligatory child element
-		if ( this.rules.obligChild[ markupTag ] ) {
+/*		if ( this.rules.obligChild[ markupTag ] ) {
 			lastMarkupTag = this.rules.obligChild[ markupTag ][0];
-			markupStack.push( lastMarkup );
+			markupStack.push( lastMarkupTag );
 		}
-
+*/
 		do {
 			markupTag = this.getMarkupTag( markup );
 			if ( ( !lastMarkupTag && this.rules.toplevel.indexOf( markupTag ) == -1 ) 
