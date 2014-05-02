@@ -1,0 +1,10 @@
+Hope is an alternative to markup languages.
+
+It is currently a proof of concept prototype to see where the ideas of Ted Nelson can lead us.
+
+Ted Nelson came up with the term Hypertext and famously defined 17 rules that a Hypertext system should conform to. His attempts to implement these in his Xanadu system haven't resulted in a finished system. But what if it had?
+
+Hope is an attempt to implement one small part of Ted's Xanadu dream: Annotation based markup. Instead of mixing the markup with the content, Hope keeps them rigorously apart. The content is nothing more than plain-text. The markup is in a seperate text file, only referencing the content using character ranges.
+
+If you are interested in researching this concept, grab the code from github and start experimenting.
+
