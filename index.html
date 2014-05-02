@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+	<title>Hope: html out-of-band</title>
+	<link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/bootstrap/2.3.0/css/bootstrap.min.css">
+	<script type="text/javascript" src="https://raw.githubusercontent.com/poef/hope/master/src/hope.js"></script>
+	<script type="text/javascript" src="https://raw.githubusercontent.com/poef/hope/master/src/hope.parse.hope.js"></script>
+	<script type="text/javascript" src="https://raw.githubusercontent.com/poef/hope/master/src/hope.render.html.js"></script>
+	<script type="text/javascript" src="https://raw.githubusercontent.com/poef/hope/master/src/src/hope.editor.js"></script>
+	<script type="text/javascript" src="https://raw.githubusercontent.com/poef/hope/master/src/hope.editor.range.js"></script>
+	<style type="text/css">
+		body {
+			padding-top: 60px;
+		}
+		img.cursor {
+			position: absolute;
+			border-left: 1px solid transparent;
+			width: 1px;
+			height: 1.2em;
+			overflow: hidden;
+			-webkit-animation: blinkempty 1s infinite;
+			animation: blinkempty 1s infinite;
+		}
+		@-webkit-keyframes blinkempty {
+			50% { border-left: 1px solid #333 ; }
+		}
+		@keyframes blinkempty {
+			50% { border-left: 1px solid #333 ; }
+		}
+		span.selection {
+			color: white;
+			background-color: rgb(0,122,255);
+			white-space: pre-wrap;
+		}
+		.halfsize {
+			width: 100%;
+			height: 350px;
+			margin-bottom: 2%;
+			overflow: auto;
+		}
+	</style>
+</head>
+<body>
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container-fluid">
+				<a class="brand">Hope</a>
+			</div>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row-fluid">
+			<div class="span6">
+<textarea class="halfsize" id="content">
+Hope is an alternative to markup languages.
+
+It is currently a proof of concept prototype to see where the ideas of Ted Nelson can lead us.
+
+Ted Nelson came up with the term Hypertext and famously defined 17 rules that a Hypertext system should conform to. His attempts to implement these in his Xanadu system haven't resulted in a finished system. But what if it had? 
+
+Hope is an attempt to implement one small part of Ted's Xanadu dream: Annotation based markup. Instead of mixing the markup with the content, Hope keeps them rigorously apart. The content is nothing more than plain-text. The markup is in a seperate text file, only referencing the content using character ranges.
+
+The content and markup must be kept in sync. This is the main drawback I found so far: you will need a specific editing program to edit content and markup, you cannot just use a text editor. So I am working on making one, you are looking at it right now.
+
+On the left you can edit the content and below it the markup. On the right is the rendered output and below it the html source. The mouse is ignored for now, but keyboard cursor movements are followed. The only commands implemented for now are ctrl-b for bold and ctrl-i for italic.
+
+You can however add any markup you want in the markup textarea, as long as it is a valid HTML tag, whithout the &lt; and &gt; characters.
+
+The upside
+
+Once you accept the need for an editing tool, I have only found advantages in using this approach.
+
+There is no possibility of cross site scripting attacks, all content must be seperated into safe text-only content or unsafe markup. They cannot mingle.
+
+Parsing the markup is extremely simple, it is just a one-dimensional list.
+
+Parsing the content is even simpler, it is just plain text.
+
+You can have many different markup files for different contexts, full html or simplified for e-mail, or even a completely different markup language instead of html.
+
+Revision tracking of the content and showing the differences becomes much easier. This also makes things like collaborative editing much simpler.
+
+Creating a wysiwym html editor becomes easy, witness this thing right here. The markup list has no concept of tree structure and markup can overlap. This makes it easier to capture the intent of the human editor instead of breaking it up to fit the nested structure of a tree.
+
+If you are interested in researching this concept, grab the code from github and start experimenting.
+
+</textarea>
+<textarea class="halfsize" id="markup">
+0-43:h3
+45-139:p
+116-126:a href="http://en.wikipedia.org/wiki/Ted_Nelson"
+141-368:p
+205-213:a href="http://en.wikipedia.org/wiki/Project_Xanadu#Original_17_rules"
+371-683:p
+441-464:a href="http://blog.codinghorror.com/what-you-cant-see-you-cant-get/"
+685-939:p
+941-1223:p
+1185-1191:em
+1205-1211:em
+1225-1356:p
+1358-1368:h3
+1370-2351:ul
+1370-1468:li
+1470-1622:li
+1624-1698:li
+1700-1759:li
+1761-1925:li
+1927-2072:li
+2074-2350:li
+2352-2453:p
+2403-2428:a href="https://github.com/poef/hope"
+</textarea>
+			</div>
+			<div class="span6">
+				<div class="halfsize" id="output">
+				</div>
+				<textarea class="halfsize" id="renderedSource"></textarea>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+		hope.editor.init( document.getElementById('content'), document.getElementById('markup'), document.getElementById('output'), document.getElementById('renderedSource'));	
+	</script>
+</body>
+</html>
