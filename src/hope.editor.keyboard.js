@@ -1,5 +1,7 @@
 hope.register( 'hope.editor.keyboard', function() {
 
+	var self = this;
+
 	var keyCodes = [];
 	keyCodes[3]  = 'Cancel';
 	keyCodes[6]  = 'Help';
@@ -185,13 +187,14 @@ hope.register( 'hope.editor.keyboard', function() {
 		}
 		// evt.key turns shift+a into A, while keeping shiftKey, so it becomes Shift+A, instead of Shift+a.
 		// so while it may be the future, i'm not using it here.
-		if ( evt.keyCode ) {
+		if ( evt.charCode ) {
+			keyInfo += String.fromCharCode( evt.charCode ).toLowerCase();
+		} else if ( evt.keyCode ) {
 			if ( typeof keyCodes[evt.keyCode] == 'undefined' ) {
 				keyInfo += '('+evt.keyCode+')';
+			} else {
+				keyInfo += keyCodes[evt.keyCode];
 			}
-			keyInfo += keyCodes[evt.keyCode];
-		} else if ( evt.charCode ) {
-			keyInfo += String.fromCharCode( evt.charCode ).toLowerCase();
 		} else {
 			keyInfo += 'Unknown';
 		}

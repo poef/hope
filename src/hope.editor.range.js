@@ -5,6 +5,6 @@ hope.register( 'hope.editor.range', function() {
 	}
 
 	this.getRange = function( el ) {
-		return { start: el.selectionStart, end: el.selectionEnd };
+		return hope.range.create( el.selectionStart, el.selectionEnd );
 	}
 });

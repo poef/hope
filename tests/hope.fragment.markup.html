@@ -42,6 +42,14 @@
 		test.assertTrue( markupFragment == '0-15:h1\n5-10:strong\n17-25:p\n' )
 	}
 
+	test.testHas = function() {
+		var markup = '0-10:b\n';
+		var markupFragment = hope.fragment.markup.create( markup );
+		var range = hope.range.create(0,5);
+		var hasBold = markupFragment.has( range, 'b' );
+		test.assertTrue( hasBold );
+	}
+
 	test.run();
 
 </script>

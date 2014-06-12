@@ -24,7 +24,7 @@ hope.register( 'hope.editor', function() {
 	}
 
 	self.updateOutput = function() {
-		var markup = self.markup.value;
+		var markup = self.fragment.markup.toString();
 		var range = hope.editor.range.getRange( self.content );
 		if ( range.start != range.end ) {
 			markup = range.start + '-' + range.end + ':span class="selection"\n' + markup;
@@ -34,7 +34,7 @@ hope.register( 'hope.editor', function() {
 				markup = cursor + ':img class="cursor"\n' + markup;
 			}
 		}
-		var output = hope.render.html.render( self.content.value, markup );
+		var output = hope.render.html.render( self.fragment.content.toString(), markup );
 		self.output.innerHTML = output;
 		if ( self.source ) {
 			self.source.innerText = output;
@@ -44,65 +44,84 @@ hope.register( 'hope.editor', function() {
 	self.init = function( contentEl, markupEl, outputEl, sourceEl ) {
 
 		// FIXME: create new instance of editor instead
+		self.fragment   = hope.fragment.create( contentEl.value, markupEl.value );
 		self.content    = contentEl;
 		self.markup     = markupEl;
 		self.output     = outputEl;
 		self.source     = sourceEl;
-		self.markupList = hope.parse.hope.parseMarkup( self.markup.value );
 		self.updateOutput();
 
 		//FIXME: contentEl and markupEl should be hidden, keypresses and selections should be handled on the output element
-
 		self.content.onkeypress = function( evt ) {
-			var range = hope.editor.range.getRange( contentEl );
-			if ( evt.ctrlKey ) {
-				switch ( evt.charCode ) {
-					case 2: //b
-						self.toggleMarkup( 'strong', range );
-						self.updateOutput();
-					break;
-					case 9: //i
-						self.toggleMarkup( 'em', range );
-						self.updateOutput();
-					break;
-				}
-			} else if ( evt.altKey ) {
-				// ignore
-			} else {
+			if ( !evt.ctrlKey && !evt.altKey ) {
+				var range = hope.editor.range.getRange( self.content );
 				var length = range.end - range.start + 1;
 				setTimeout( function() {
 					self.updateMarkup( range.start, length );
 					self.updateOutput();
 				}, 0 );
 			}
+		};
+
+		self.content.onkeydown = function( evt ) {
+			var key = hope.editor.keyboard.getKey( evt );
+			switch (key) {
+				case 'Control+b':
+					var range = hope.editor.range.getRange( self.content );
+					self.toggleMarkup('strong', range);
+					evt.preventDefault();
+				break;
+				case 'Control+i':
+					var range = hope.editor.range.getRange( self.content );
+					self.toggleMarkup('em', range);
+					evt.preventDefault();
+				break;
+			}
 		}
 
-		self.content.onkeyup = function(evt) {
-			var range = hope.editor.range.getRange( contentEl );
-			var length = range.end - range.start;
-			if ( length == 0 ) {
-				length = 1;
-			}
-			switch ( evt.keyCode ) {
-				case 8: //backspace
+		self.content.onkeyup = function( evt ) {
+			var key = hope.editor.keyboard.getKey( evt );
+			switch ( key ) {
+				case 'Backspace' :
+					var range = hope.editor.range.getRange( self.content );
+					var length = range.end - range.start;
+					if ( length == 0 ) {
+						length = 1;
+					}
 					if ( range.start > 0 || range.end > 0 ) {
 						self.updateMarkup( range.end, -length );
+						self.updateOutput();
 					}
 				break;
-				case 46: // delete
-					if ( range.end < contentEl.value.length || range.start < contentEl.value.length ) {
-						self.updateMarkup( range.end+1, -length );
+				case 'Delete' :
+					var range = hope.editor.range.getRange( self.content );
+					var length = range.end - range.start;
+					if ( length == 0 ) {
+						length = 1;
 					}
+					if ( range.end < self.content.value.length || range.start < self.content.value.length ) {
+						self.updateMarkup( range.end+1, -length );
+						self.updateOutput();
+					}
+				break;
+				case 'Enter' :
+					// check if there is a <br> at the position before this, if so we should remove it and start a new block element
+					// if not we should insert a <br>
+					//var cursor = hope.editor.range.getCursor( self.content );
+					//var 
+				break;
+				default: 
+					setTimeout( function() {
+						self.updateOutput();
+					}, 0);
 				break;
 			}
-			setTimeout( function() {
-				self.updateOutput();
-			}, 0);
 		}
 
-		self.markup.onkeyup = function(evt) {
-
+		self.output.onkeypress = function( evt ) {
+			self.content.dispatchEvent( evt );
 		}
+
 
 		self.markup.onkeypress = function( evt ) {
 			setTimeout( function() {
@@ -111,7 +130,9 @@ hope.register( 'hope.editor', function() {
 		}
 
 		self.toggleMarkup = function( markup, range ) {
-			if ( range.start == range.end ) {
+			self.fragment.toggle( range, markup );
+		}
+/*			if ( range.start == range.end ) {
 				// TODO toggle markup state for next character typed
 			} else {
 				// selection
@@ -156,8 +177,10 @@ hope.register( 'hope.editor', function() {
 			}
 			self.renderMarkup();
 		}
+*/
 
 		self.cleanMarkup = function() {
+			return;
 			// remove empty entries with no attributes
 			// FIXME: needs a trim()
 			// FIXME: any empty entry may be deleted, attributes or no, unless it is an autoclosing entry
