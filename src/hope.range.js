@@ -1,6 +1,7 @@
 hope.register( 'hope.range', function() {
 	
 	function hopeRange( start, end ) {
+
 		this.start = start;
 
 		if ( end < this.start ) {
@@ -23,6 +24,7 @@ hope.register( 'hope.range', function() {
 			} else {
 				this.end = this.start;
 			}
+			return this;
 		};
 
 		this.compare = function( range ) {
@@ -38,12 +40,16 @@ hope.register( 'hope.range', function() {
 			return 0;
 		}
 
+		this.contains = function( range ) {
+			return this.start <= range.start && this.end >= range.end;
+		}
+
 		this.overlaps = function( range ) {
 			// the >= and <= comparison is intentional, since ranges match position between characters, 
 			// when range.end is equal to this.start or range.start is equal to this.end, the ranges
 			// occupy the same position at either the start or end. For all purposes this can be
 			// treated the same as if they overlapped
-			return ( range.start <= this.end && range.end >= this.start );
+			return ( range.start < this.end && range.end > this.start );
 		}
 
 		this.isEmpty = function() {
@@ -94,15 +100,50 @@ hope.register( 'hope.range', function() {
 			} else {
 				this.start = Math.max( 0, this.start - length );
 			}
+			return this;
 		}
 
 		this.toString = function() {
 			return this.start + '-' + this.end;
 		}
 
+		this.grow = function( size ) {
+			this.end += size;
+			if ( this.end < this.start ) {
+				this.end = this.start;
+			}
+			return this;
+		}
+
+		this.shrink = function( size ) {
+			return this.grow( -size );
+		}
+
+		this.move = function( length, min, max ) {
+			this.start += length;
+			this.end += length;
+			if ( !min ) {
+				min = 0;
+			}
+			this.start = Math.max( min, this.start );
+			this.end = Math.max( this.start, this.end );
+			if ( max ) {
+				this.start = Math.min( max, this.start );
+				this.end = Math.min( max, this.start );
+			}
+			return this;
+		}
+
 	}	
 
 	this.create = function( start, end ) {
+		if ( start instanceof hopeRange ) {
+			return start.clone();
+		}
+		if ( typeof start[1] != 'undefined' ) {
+			end = start[1];
+			start = start[0];
+		}
 		return new hopeRange( start, end );
 	}
 

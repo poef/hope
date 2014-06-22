@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+	<script type="text/javascript" src="../src/hope.js"></script>
+	<script type="text/javascript" src="../src/hope.test.js"></script>
+	<script type="text/javascript" src="../src/hope.range.js"></script>
+	<script type="text/javascript" src="../src/hope.fragment.annotations.js"></script>
+</head>
+<body>
+<div id="hopeTestOutput" style="white-space: pre"></div>
+<script type="text/javascript">
+
+	var test = hope.test.create();
+
+	test.testParse = function() {
+		var annotations = '0-10:h1\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		var list = annotationsFragment.get( [0, 20 ] );
+		test.assertTrue( list.length() == 2 );
+		var compiled = annotationsFragment + '';
+		test.assertTrue( compiled == annotations );
+	}
+
+	test.testClean = function() {
+		var annotations = '0-10:h1\n12-20:p\n5-10:strong\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		test.assertTrue( annotationsFragment == '0-10:h1\n5-10:strong\n12-20:p\n' );
+	}
+
+	test.testCut = function() {
+		var annotations = '0-10:h1\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		var list = annotationsFragment.cut( [ 5, 10 ] );
+		test.assertTrue( annotationsFragment == '0-5:h1\n7-15:p\n' );
+		test.assertTrue( list == '0-5:h1\n' );		
+	}
+
+	test.testInsert = function() {
+		var annotations = '0-10:h1\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		annotationsFragment.insert( [ 5, 10 ] );
+		test.assertTrue( annotationsFragment == '0-15:h1\n17-25:p\n' );
+	}
+
+	test.testCopy = function() {
+		var annotations = '0-10:h1\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		var copyList = annotationsFragment.copy( [ 5, 10 ] );
+		test.assertTrue( copyList == '0-5:h1\n' );		
+	}
+
+	test.testPaste = function() {
+		var annotations = '0-10:h1\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		annotationsFragment.paste( [ 5, 10 ], 'strong' );
+		test.assertTrue( annotationsFragment == '0-15:h1\n5-10:strong\n17-25:p\n' )
+	}
+
+	test.testHas = function() {
+		var annotations = '0-10:h1\n4-8:em\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		test.assertTrue( annotationsFragment.has( [ 5, 6 ], 'em' ) );
+		test.assertFalse( annotationsFragment.has( [ 5, 6 ], 'strong' ) )
+	}
+
+	test.testGet = function() {
+		var annotations = '0-10:h1\n4-8:em\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		var list = annotationsFragment.get( [ 5, 5 ] );
+		test.assertTrue( ''+list == '0-10:h1\n4-8:em\n' );
+	}
+
+	test.testClear = function() {
+		var annotations = '0-10:h1\n4-8:em\n6-10:strong\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		var cutList = annotationsFragment.clear( [2, 9 ] );
+		var list = annotationsFragment.get( [ 0, 10 ] );
+		test.assertTrue( ''+list == '0-10:h1\n9-10:strong\n' );
+		test.assertTrue( ''+cutList == '4-8:em\n6-9:strong\n' ); // FIXME
+	}
+
+	test.run();
+
+</script>
+</body>
+</html>

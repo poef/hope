@@ -14,8 +14,7 @@
 
 	test.testCut = function() {
 		var text = hope.fragment.text.create('1234567890');
-		var range = hope.range.create( 3, 6 );
-		var cutContent = text.cut( range );
+		var cutContent = text.cut( [ 3, 6 ] );
 		test.assertTrue( text.length() == 7 );
 		test.assertTrue( cutContent.length() == 3 );
 		test.assertTrue( text == '1237890' );
@@ -24,8 +23,7 @@
 
 	test.testCopy = function() {
 		var text = hope.fragment.text.create('1234567890');
-		var range = hope.range.create( 3, 6 );
-		var copiedContent = text.copy( range );
+		var copiedContent = text.copy( [ 3, 6 ] );
 		test.assertTrue( text.length() == 10 );
 		test.assertTrue( copiedContent.length() == 3 );
 		test.assertTrue( text == '1234567890' );
@@ -34,8 +32,7 @@
 
 	test.testPaste = function() {
 		var text = hope.fragment.text.create('1234567890');
-		var range = hope.range.create( 3, 6 );
-		var cutContent = text.paste( range, 'test' );
+		var cutContent = text.paste( [ 3, 6 ], 'test' );
 		test.assertTrue( text.length() == 11 );
 		test.assertTrue( cutContent.length() == 3 );
 		test.assertTrue( text == '123test7890' );

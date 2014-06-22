@@ -17,6 +17,16 @@ hope.register( 'hope.test', function() {
 			}
 		};
 
+		this.assertFalse = function( expression ) {
+			this.countAssert++;
+			if ( expression !== false ) {
+				this.errors.push( 'test failed: expression not false at ' + this.currentTest + ' assertion ' + this.countAssert );
+				this.write( this.errors[ this.errors.length - 1 ] );
+			} else {
+				this.success++;
+			}
+		}
+
 		this.run = function() {
 			this.errors = [];
 			this.success = 0;
