@@ -1,237 +1,176 @@
 hope.register( 'hope.editor', function() {
 
-	var self = this;
+	function hopeEditor( textEl, annotationsEl, outputEl, renderEl ) {
+		this.refs = {
+			text: textEl,
+			annotations: annotationsEl,
+			output: outputEl,
+			render: renderEl
+		};
+		this.selection = hope.editor.selection.create(0,0,this);
+		this.commandsKeyUp = {};
 
-	self.updateMarkup = function( position, length ) {
-		for ( var i=0, l=self.markupList.length; i<l; i++ ) {
-			var entry = self.markupList[i];
-			if ( entry.start >= position ) {
-				entry.start += length;
-			}
-			if ( entry.end >= position ) {
-				entry.end += length;
-			}
-		}
-		self.renderMarkup();
+		var text = this.refs.text.value;
+		var annotations = this.refs.annotations.value;
+		this.fragment = hope.fragment.create( text, annotations );
+		this.refs.output.contentEditable = true;
+		this.update();
+		initEvents(this);
 	}
 
-	self.renderMarkup = function() {
-		var markupText = '';
-		for ( var i=0,l=self.markupList.length; i<l; i++ ) {
-			markupText += self.markupList[i].start + '-' + self.markupList[i].end + ':' + self.markupList[i].markup + '\n';
-		}			
-		self.markup.value = markupText;		
-	}
-
-	self.updateOutput = function() {
-		var markup = self.markup.value;
-		var range = hope.editor.range.getRange( self.content );
-		if ( range.start != range.end ) {
-			markup = range.start + '-' + range.end + ':span class="selection"\n' + markup;
-		} else {
-			var cursor = hope.editor.range.getCursor( self.content );
-			if ( cursor ) {
-				markup = cursor + ':img class="cursor"\n' + markup;
-			}
-		}
-		var output = hope.render.html.render( self.content.value, markup );
-		self.output.innerHTML = output;
-		if ( self.source ) {
-			self.source.innerText = output;
-		}
-	}
-
-	self.init = function( contentEl, markupEl, outputEl, sourceEl ) {
-
-		// FIXME: create new instance of editor instead
-		self.content    = contentEl;
-		self.markup     = markupEl;
-		self.output     = outputEl;
-		self.source     = sourceEl;
-		self.markupList = hope.parse.hope.parseMarkup( self.markup.value );
-		self.updateOutput();
-
-		//FIXME: contentEl and markupEl should be hidden, keypresses and selections should be handled on the output element
-
-		self.content.onkeypress = function( evt ) {
-			var range = hope.editor.range.getRange( contentEl );
-			if ( evt.ctrlKey ) {
-				switch ( evt.charCode ) {
-					case 2: //b
-						self.toggleMarkup( 'strong', range );
-						self.updateOutput();
-					break;
-					case 9: //i
-						self.toggleMarkup( 'em', range );
-						self.updateOutput();
-					break;
+	function initEvents(editor) {
+		hope.events.listen(editor.refs.output, 'keypress', function( evt ) {
+			if ( !evt.ctrlKey && !evt.altKey ) {
+				// check selection length
+				// remove text in selection
+				// add character
+				var range = editor.selection.getRange();
+				var charCode = evt.which || evt.keyCode;
+				var charTyped = String.fromCharCode(charCode);
+				if ( charTyped ) { // ignore non printable characters
+    				if ( range.length ) {
+    					editor.fragment = editor.fragment.delete(range);
+    				}
+					editor.fragment = editor.fragment.insert(range.start, charTyped );
+					editor.selection.collapse().move(1);
+					setTimeout( function() {
+						editor.update();
+					}, 0 );
 				}
-			} else if ( evt.altKey ) {
-				// ignore
-			} else {
-				var length = range.end - range.start + 1;
+			}
+			return hope.events.cancel(evt);
+		});
+
+		hope.events.listen(editor.refs.output, 'keydown', function( evt ) {
+			var key = hope.keyboard.getKey( evt );
+			if ( editor.commands[key] ) {
+				var range = editor.selection.getRange();
+				editor.commands[key].call(editor, range);
 				setTimeout( function() {
-					self.updateMarkup( range.start, length );
-					self.updateOutput();
-				}, 0 );
+					editor.update();
+				}, 0);
+				return hope.events.cancel(evt);
+			} else if ( evt.ctrlKey || evt.altKey ) {
+				return hope.events.cancel(evt);
 			}
-		}
+		});
 
-		self.content.onkeyup = function(evt) {
-			var range = hope.editor.range.getRange( contentEl );
-			var length = range.end - range.start;
-			if ( length == 0 ) {
-				length = 1;
-			}
-			switch ( evt.keyCode ) {
-				case 8: //backspace
-					if ( range.start > 0 || range.end > 0 ) {
-						self.updateMarkup( range.end, -length );
-					}
-				break;
-				case 46: // delete
-					if ( range.end < contentEl.value.length || range.start < contentEl.value.length ) {
-						self.updateMarkup( range.end+1, -length );
-					}
-				break;
-			}
-			setTimeout( function() {
-				self.updateOutput();
-			}, 0);
-		}
-
-		self.markup.onkeyup = function(evt) {
-
-		}
-
-		self.markup.onkeypress = function( evt ) {
-			setTimeout( function() {
-				self.updateOutput()
-			}, 0 );
-		}
-
-		self.toggleMarkup = function( markup, range ) {
-			if ( range.start == range.end ) {
-				// TODO toggle markup state for next character typed
-			} else {
-				// selection
-				var markupSet = hope.parse.hope.getMarkupSet( self.markupList, range );
-				var markupFound = false;
-				for ( var i=0,l=markupSet.length; i<l; i++ ) {
-					var entry = markupSet[i];
-					if ( entry.markup == markup ) {
-						markupFound = entry;
-					}
+		hope.events.listen(editor.refs.output, 'keyup', function( evt ) {
+			var key = hope.keyboard.getKey( evt );
+			if ( editor.selection.cursorCommands.indexOf(key)<0 ) {
+				if ( editor.commandsKeyUp[key] ) {
+					var range = editor.selection.getRange();
+					editor.commandsKeyUp[key].call(editor, range);
+					setTimeout( function() {
+						editor.update();
+					}, 0);
 				}
-				if ( !markupFound ) {
-					self.markupList.push( {
-						start: range.start,
-						end: range.end,
-						markup: markup,
-						index: self.markupList.length
-					} );
-				} else {
-					if ( markupFound.start <= range.start ) {
-						if ( markupFound.end > range.end ) {
-							// toggle inside
-							self.markupList.push( {
-								start: range.end,
-								end: markupFound.end,
-								markup: markupFound.markup,
-								index: self.markupList.length
-							} );
-							markupFound.end = range.start;
-						} else {
-							// toggle the remainder
-							markupFound.end = range.start;
-						}
-					} else {
-						markupFound.start = range.start;
-						if ( markupFound.end < range.end ) {
-							markupFound.end = range.end;
-						}
-					}
-				}
-				self.cleanMarkup();
+				return hope.events.cancel(evt);
 			}
-			self.renderMarkup();
+		});
+
+	}
+
+	hopeEditor.prototype.getEditorRange = function(start, end ) {
+		var treeWalker = document.createTreeWalker( 
+			this.refs.output, 
+			NodeFilter.SHOW_TEXT, 
+			function(node) {
+				return NodeFilter.FILTER_ACCEPT; 
+			},
+			false
+		);
+		var offset = 0;
+		var node = null;
+		var range = document.createRange();
+		var lastNode = null;
+		do {
+			lastNode = node;
+			node = treeWalker.nextNode();
+			if ( node ) {
+				offset += node.textContent.length;
+			}			
+		} while ( offset < start && node );
+		if ( !node ) {
+			range.setStart(lastNode, lastNode.textContent.length );
+			range.setEnd(lastNode, lastNode.textContent.length );
+			return range;
 		}
-
-		self.cleanMarkup = function() {
-			// remove empty entries with no attributes
-			// FIXME: needs a trim()
-			// FIXME: any empty entry may be deleted, attributes or no, unless it is an autoclosing entry
-			var newMarkupList = [];
-			for ( var i=0, l=self.markupList.length; i<l; i++ ) {
-				var entry = self.markupList[i];
-				if ( typeof entry.start == 'undefined' ) {
-					entry.index = newMarkupList.length;
-					newMarkupList.push( entry );	
-				} else if ( entry.start == entry.end ) {
-					var markupTag = hope.render.html.getMarkupTag( entry.markup );
-					if ( markupTag == entry.markup && hope.render.html.rules.noChildren.indexOf( markupTag) == -1 ) {
-						//self.markupList[i] = null;
-					} else {
-						entry.index = newMarkupList.length;
-						newMarkupList.push( entry );
-					}
-				} else {
-					entry.index = newMarkupList.length;
-					newMarkupList.push( entry );
-				}
+		var preOffset = offset - node.textContent.length;
+		range.setStart(node, start - preOffset );
+		while ( offset < end && node ) {
+			node = treeWalker.nextNode();
+			if ( node ) {
+				offset += node.textContent.length;
 			}
-
-			// merge overlapping or connected entries
-			var relativeMarkup = hope.parse.hope.getRelativeMarkup( newMarkupList );
-			for ( var i=0, l=relativeMarkup.length; i<l; i++ ) {
-				var markupSetReferences = relativeMarkup[i].markup;
-				var markupFound = [];
-				for ( var ii=0, ll=markupSetReferences.length; ii<ll; ii++ ) {
-					var entry = newMarkupList[ markupSetReferences[ii].index ];
-					var index = markupFound.indexOf( entry.markup );
-					if ( index != -1 ) {
-						// overlapping markup
-						var overlappingMarkup = newMarkupList[ index ];
-						if ( typeof overlappingMarkup.start != 'undefined' ) {
-							if ( overlappingMarkup.start > entry.start ) {
-								overlappingMarkup.start = entry.start;
-							}
-							if ( overlappingMarkup.end < entry.end ) {
-								overlappingMarkup.end = entry.end;
-							}
-							newMarkupList[ index ] = null;
-						}
-					} else {
-						markupFound[ index ] = entry.markup;
-					}
-				}
-			}
-
-			// reindex 
-			var newMarkupList2 = [];
-			for ( var i = 0, l = newMarkupList.length; i<l; i++ ) {
-				if ( newMarkupList[i] ) {
-					var entry = newMarkupList[i];
-					if ( typeof entry.start != 'undefined' ) {
-						newMarkupList2.push( {
-							start: entry.start,
-							end: entry.end,
-							markup: entry.markup,
-							index: newMarkupList2.length
-						});
-					} else {
-						newMarkupList2.push( {
-							insert: entry.insert,
-							markup: entry.markup,
-							index: newMarkupList2.length
-						});
-					}
-				}
-			}
-
-			self.markupList = newMarkupList2;
 		}
+		if ( !node ) {
+			range.setEnd(lastNode, lastNode.textContent);
+			return range;
+		}
+		var preOffset = offset - node.textContent.length;
+		range.setEnd(node, end - preOffset );
+		return range;
+	}
 
+	hopeEditor.prototype.showCursor = function() {
+		var range = this.selection.getRange();
+		var selection = this.getEditorRange(range.start, range.end);
+		var htmlSelection = window.getSelection();
+		htmlSelection.removeAllRanges();
+		htmlSelection.addRange(selection);
+	}
+
+
+	hopeEditor.prototype.commands = {
+		'Control+b': function(range) {
+			this.fragment = this.fragment.toggle(range, 'strong');
+		},
+		'Control+i': function(range) {
+			this.fragment = this.fragment.toggle(range, 'em');
+		},
+		'Backspace' : function(range) {
+			if ( range.isEmpty() ) {
+				range = range.extend(1, -1);
+			}
+			this.fragment = this.fragment.delete( range );
+			this.selection.collapse().move(-1);
+		},
+		'Delete' : function(range) {
+			if ( range.isEmpty() ) {
+				range = range.extend(1, 1);
+			}
+			this.fragment = this.fragment.delete( range );
+			this.selection.collapse();
+		},
+	};
+
+	hopeEditor.prototype.update = function() {
+		var html = hope.render.html.render( this.fragment );
+		this.refs.output.innerHTML = html;
+		this.showCursor();
+
+		if ( this.refs.text ) {
+			this.refs.text.value = ''+this.fragment.text;
+		}
+		if ( this.refs.render ) {
+			this.refs.render.innerHTML = html.replace('&','&amp;').replace('<', '&lt;').replace('>', '&gt');
+		}
+		if ( this.refs.annotations ) {
+			this.refs.annotations.innerHTML = this.fragment.annotations+'';
+		}
+	}
+
+	hopeEditor.prototype.command = function( key, callback, keyup ) {
+		if ( keyup ) {
+			this.commandsKeyUp[key] = callback;
+		} else {
+			this.commands[key] = callback;
+		}
+	}
+
+	this.create = function( textEl, annotationsEl, outputEl, previewEl ) {
+		return new hopeEditor( textEl, annotationsEl, outputEl, previewEl);
 	}
 
 });
