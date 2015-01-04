@@ -2,7 +2,7 @@ hope.register( 'hope.render.html', function() {
 
 
 	var nestingSets = {
-		'inline'	: [ 'tt', 'u', 'strike', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'sub', 'sup', 'q', 'span', 'bdo', 'a', 'object', 'img', 'bd' ],
+		'inline'	: [ 'tt', 'u', 'strike', 'em', 'strong', 'dfn', 'code', 'samp', 'kbd', 'var', 'cite', 'abbr', 'acronym', 'sub', 'sup', 'q', 'span', 'bdo', 'a', 'object', 'img', 'bd', 'br', 'i' ],
 		'block'		: [ 'address', 'dir', 'menu', 'hr', 'table', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'ul', 'ol', 'dl', 'div', 'blockquote', 'iframe' ]
 	};
 
@@ -77,117 +77,127 @@ hope.register( 'hope.render.html', function() {
 			'dd' : [ 'dl' ]
 		},
 		// which html elements to allow as the top level, default is only block elements
-		'toplevel' : nestingSets.block
+		'toplevel' : nestingSets.block + [ 'li', 'img', 'span' ]
 	}
 
-	this.getMarkupTag = function( markup ) {
+	this.getTag = function( markup ) {
 		return markup.split(' ')[0].toLowerCase(); // FIXME: more robust parsing needed
 	}
 
-	this.getMarkupStack = function( markupSet ) {
-		// { index:nextMarkupEntry.index, entry:nextMarkup }
-		// 		{ start:, end:, markup: }
-		// assert: markupSet must only contain markup that has overlapping ranges
+	this.getAnnotationStack = function( annotationSet ) {
+		// { index:nextAnnotationEntry.index, entry:nextAnnotation }
+		// 		{ start:, end:, annotation: }
+		// assert: annotationSet must only contain annotation that has overlapping ranges
 		// if not results will be unpredictable
-		var markupStack = [];
-		if ( !markupSet.length ) {
+		var annotationStack = [];
+		if ( !annotationSet.length ) {
 			return [];
 		}
-		markupSet.sort( function( a, b ) {
-			if ( a.start < b.start ) {
+		annotationSet.sort( function( a, b ) {
+			if ( a.range.start < b.range.start ) {
 				return -1;
-			} else if ( a.start > b.start ) {
+			} else if ( a.range.start > b.range.start ) {
 				return 1;
-			} else if ( a.end > b.end ) {
+			} else if ( a.range.end > b.range.end ) {
 				return -1;
-			} else if ( a.end < b.end ) {
+			} else if ( a.range.end < b.range.end ) {
 				return 1;
 			}
 			return 0;
 		});
 		var unfilteredStack = [];
-		for ( var i=0, l=markupSet.length; i<l; i++ ) {
-			unfilteredStack.push( markupSet[i].markup ); // needs to be filtered
+		for ( var i=0, l=annotationSet.length; i<l; i++ ) {
+			unfilteredStack.push( annotationSet[i].tag ); // needs to be filtered
 		}
-		// assume markup higher in the stack is what user intended, so should override conflicting markup lower in the stack
+		// assume annotation higher in the stack is what user intended, so should override conflicting annotation lower in the stack
 		// stack will be built up in reverse, most local styles applied first
-		var markup        = unfilteredStack.pop();
-		var markupTag     = this.getMarkupTag( markup );
-		var lastMarkupTag = '';
-		var skippedMarkup = [];
+		var annotation        = unfilteredStack.pop();
+		var annotationTag     = this.getTag( annotation );
+		var lastAnnotationTag = '';
+		var skippedAnnotation = [];
 
 		// make sure any obligatory child is applied
 		// FIXME: for readable html you should allow whitespace to be outside an obligatory child element
-/*		if ( this.rules.obligChild[ markupTag ] ) {
-			lastMarkupTag = this.rules.obligChild[ markupTag ][0];
-			markupStack.push( lastMarkupTag );
+/*		if ( this.rules.obligChild[ annotationTag ] ) {
+			lastAnnotationTag = this.rules.obligChild[ annotationTag ][0];
+			annotationStack.push( lastAnnotationTag );
 		}
 */
 		do {
-			markupTag = this.getMarkupTag( markup );
-			if ( ( !lastMarkupTag && this.rules.toplevel.indexOf( markupTag ) == -1 ) 
-				|| ( lastMarkupTag && ( !this.rules.nesting[ markupTag ] || this.rules.nesting[ markupTag ].indexOf( lastMarkupTag ) == -1 ) ) ) {
-				// not legal: lastMarkupTag may not be set inside markupTag - so we cannot apply markupTag
+			annotationTag = this.getTag( annotation );
+			if ( ( !lastAnnotationTag && this.rules.toplevel.indexOf( annotationTag ) == -1 ) 
+				|| ( lastAnnotationTag && ( !this.rules.nesting[ annotationTag ] || this.rules.nesting[ annotationTag ].indexOf( lastAnnotationTag ) == -1 ) ) ) {
+				// not legal: lastAnnotationTag may not be set inside annotationTag - so we cannot apply annotationTag
 				// save it for another try later
-				skippedMarkup.push( markup );			
+				skippedAnnotation.push( annotation );			
 			} else {
-				markupStack.push( markup );
-				lastMarkupTag = this.getMarkupTag( markup );
+				annotationStack.push( annotation );
+				lastAnnotationTag = this.getTag( annotation );
 			}
-		} while ( markup = unfilteredStack.pop() );
+		} while ( annotation = unfilteredStack.pop() );
 
-		if ( skippedMarkup.length ) {
-			// now try to find a spot for any markup from the skippedMarkup set
-			// most likely: inline markup that was more generally applied than block markup
+		if ( skippedAnnotation.length ) {
+			// now try to find a spot for any annotation from the skippedAnnotation set
+			// most likely: inline annotation that was more generally applied than block annotation
 			// the order has been reversed
-			var topMarkupTag = markupStack[0];
-			while ( markup = skippedMarkup.pop() ) {
-				markupTag = this.getMarkupTag( markup );
-				if (  ( !topMarkupTag && this.rules.toplevel.indexOf( markupTag ) == -1 ) 
-					|| ( topMarkupTag && ( !this.rules.nesting[ topMarkupTag ] || this.rules.nesting[ topMarkupTag ].indexOf( markupTag ) == -1 ) ) ) {
+			var topAnnotationTag = annotationStack[0];
+			while ( annotation = skippedAnnotation.pop() ) {
+				annotationTag = this.getTag( annotation );
+				if (  ( !topAnnotationTag && this.rules.toplevel.indexOf( annotationTag ) == -1 ) 
+					|| ( topAnnotationTag && ( !this.rules.nesting[ topAnnotationTag ] || this.rules.nesting[ topAnnotationTag ].indexOf( annotationTag ) == -1 ) ) ) {
 					// not legal, you could try another run... FIXME: should probably try harder 
 				} else {
-					markupStack.unshift( markup );
-					topMarkupTag = markupTag;
+					annotationStack.unshift( annotation );
+					topAnnotationTag = annotationTag;
 				}
 			}
 		}
-		// FIXME: this routine can be improved - it needs a more intelligent algorithm to reorder the markup to maximize the applied
-		// markup from the markupSet in the markupStack
-		return markupStack.reverse();
+		// FIXME: this routine can be improved - it needs a more intelligent algorithm to reorder the annotation to maximize the applied
+		// annotation from the annotationSet in the annotationStack
+		return annotationStack.reverse();
 	}
 
-	this.getMarkupDiff = function( markupStackFrom, markupStackTo ) {
+	this.getAnnotationDiff = function( annotationStackFrom, annotationStackTo, annotationsOnce ) {
+		var annotationDiff = [];
+		for ( var i=0, l=annotationsOnce.length; i<l; i++ ) {
+			annotationDiff.push( { type : 'insert', annotation : annotationsOnce[i] } );
+		}
+
 		var commonStack = [];
-		for ( i=0, l=markupStackFrom.length; i<l; i++ ) {
-			if ( markupStackFrom[i] != markupStackTo[i] ) {
+		for ( i=0, l=annotationStackFrom.length; i<l; i++ ) {
+			if ( annotationStackFrom[i] != annotationStackTo[i] ) {
 				break;
 			}
-			commonStack.push( markupStackFrom[i] );
+			commonStack.push( annotationStackFrom[i] );
 		}
 		var commonIndex = i-1;
-		var markupDiff = [];
-		for ( var i=markupStackFrom.length-1; i>commonIndex; i-- ) {
-			markupDiff.push( { type : 'close', markup : markupStackFrom[i] } );
+		for ( var i=annotationStackFrom.length-1; i>commonIndex; i-- ) {
+			annotationDiff.push( { type : 'close', annotation : annotationStackFrom[i] } );
 		}
-		for ( var i=commonIndex+1, l=markupStackTo.length; i<l; i++ ) {
-			markupDiff.push( { type : 'start', markup : markupStackTo[i] } );
+		for ( var i=commonIndex+1, l=annotationStackTo.length; i<l; i++ ) {
+			annotationDiff.push( { type : 'start', annotation : annotationStackTo[i] } );
 		}
-		return markupDiff;
+
+		return annotationDiff;
 	}
 
-	this.renderMarkupDiff = function( markupDiff ) {
+	this.renderAnnotationDiff = function( annotationDiff ) {
 		// FIXME: allow rendering of custom elements, must still be inserted into this.rules
 		var renderedDiff = '';
-		for ( var i=0, l=markupDiff.length; i<l; i++ ) {
-			if ( markupDiff[i].type == 'close' ) {
-				var markupTag = this.getMarkupTag( markupDiff[i].markup );
-				if ( this.rules.noChildren.indexOf( markupTag ) == -1 ) {
-					renderedDiff += '</' + markupTag + '>';
+		for ( var i=0, l=annotationDiff.length; i<l; i++ ) {
+			if ( annotationDiff[i].type == 'close' ) {
+				var annotationTag = this.getTag( annotationDiff[i].annotation );
+				if ( this.rules.noChildren.indexOf( annotationTag ) == -1 ) {
+					renderedDiff += '</' + annotationTag + '>';
+				}
+			} else if ( annotationDiff[i].type == 'insert' ) {
+				renderedDiff += '<' + annotationDiff[i].annotation + '>';
+				var annotationTag = this.getTag( annotationDiff[i].annotation );
+				if ( this.rules.noChildren.indexOf( annotationTag ) == -1 ) {
+					renderedDiff += '</' + annotationTag + '>';
 				}
 			} else {
-				// FIXME: allow img tag to use a range to set the alt attribute
-				renderedDiff += '<' + markupDiff[i].markup + '>';
+				renderedDiff += '<' + annotationDiff[i].annotation + '>';
 			}
 		}
 		return renderedDiff;
@@ -202,59 +212,60 @@ hope.register( 'hope.render.html', function() {
 			.replace(/'/g, "&#039;");
 	}
 
-	this.render = function( content, markup ) {
-		// FIXME: markup should be the relative markup list to speed things up
-		var markupSet      = [];    // set of applicable markup at current position
-		var markupStack    = [];  // stack of applied (valid) markup at current position
+	this.render = function( fragment ) {
+		// FIXME: annotation should be the relative annotation list to speed things up
+		var annotationSet      = [];    // set of applicable annotation at current position
+		var annotationStack    = [];  // stack of applied (valid) annotation at current position
 
-		var markupList     = hope.parse.hope.parseMarkup( markup );
-		var relativeMarkup = hope.parse.hope.getRelativeMarkup( markupList );
+		var relativeAnnotation = fragment.annotations.getEventList();
+		var content        = fragment.text.toString().replace(/  /g, ' \u00A0');
 
 		var renderedHTML   = '';
 		var cursor         = 0;
 
-		while ( relativeMarkup.length ) {
+		while ( relativeAnnotation.length ) {
 
-			var markupChangeSet = relativeMarkup.shift();
-			var markupAdded     = []; // list of markup added in this change set
-			var markupSetOnce   = []; // list of markup that can not have children, needs no close
-			for ( i=0, l=markupChangeSet.markup.length; i<l; i++ ) {
-				var markupChange = markupChangeSet.markup[i];
-				switch ( markupChange.type ) {
+			var annotationChangeSet = relativeAnnotation.shift();
+			var annotationAdded     = []; // list of annotation added in this change set
+			var annotationSetOnce   = []; // list of annotation that can not have children, needs no close
+			for ( i=0, l=annotationChangeSet.markup.length; i<l; i++ ) {
+				var annotationChange = annotationChangeSet.markup[i];
+				switch ( annotationChange.type ) {
 					case 'start':
-						markupSet.push( markupList[ markupChange.index ] );
-						markupAdded.push( markupChange.index );
+						annotationSet.push( fragment.annotations.list[ annotationChange.index ] );
+						annotationAdded.push( annotationChange.index );
 					break;
 					case 'end':
-						markupSet = markupSet.filter( function( element ) {
-							return element.index != markupChange.index;
+						annotationSet = annotationSet.filter( function( element ) {
+							return element != fragment.annotations.list[ annotationChange.index ];
 						} );
 					break;
 					case 'insert':
-						markupSetOnce.push( markupList[ markupChange.index ] );
+						annotationSetOnce.push( fragment.annotations.list[ annotationChange.index ] );
 					break;
 				}
 			}
 
-			// add any content that has no change in markup
-			var offset = markupChangeSet.offset;
+			// add any content that has no change in annotation
+			var offset = annotationChangeSet.offset;
 			if ( offset > 0 ) {
 				renderedHTML += this.escape( content.substr(cursor, offset) );
 				cursor+=offset;
 			}
 			offset = 0;
 
-			// calculate the valid markup stack from a given set
-			var newMarkupStack = this.getMarkupStack( markupSet.concat( markupSetOnce ) );
+			// calculate the valid annotation stack from a given set
+			var newAnnotationStack = this.getAnnotationStack( annotationSet ); //.concat( annotationSetOnce ) );
+			var newAnnotationsOnce = this.getAnnotationStack( annotationSetOnce );
 			// calculate the difference - how to get from stack one to stack two with the minimum of tags
-			var diff = this.getMarkupDiff( markupStack, newMarkupStack );
-			// remove autoclosing markup from the newMarkupStack
-			var newMarkupStack = this.getMarkupStack( markupSet );
-			var diffHTML = this.renderMarkupDiff( diff );
+			var diff = this.getAnnotationDiff( annotationStack, newAnnotationStack, newAnnotationsOnce );
+			// remove autoclosing annotation from the newAnnotationStack
+			var newAnnotationStack = this.getAnnotationStack( annotationSet );
+			var diffHTML = this.renderAnnotationDiff( diff );
 			renderedHTML += diffHTML;
-			markupStack = newMarkupStack;
+			annotationStack = newAnnotationStack;
 
-		} while( relativeMarkup.length );
+		} while( relativeAnnotation.length );
 
 		if ( cursor < content.length ) {
 			renderedHTML += this.escape( content.substr( cursor ) );

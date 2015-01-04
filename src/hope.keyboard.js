@@ -1,45 +1,6 @@
-<!doctype html>
-<html>
-<head>
-</head>
-<body>
-<div id="output" style="width: 500px; height: 500px;" contentEditable=true>
-	<h1>Dit is een kopje</h1>
-	<p>En dit is <strong>een</strong> paragraaf.</p>
-</div>
-<div id="log"></div>
-<script>
-	var output = document.getElementById('output');
-	function cancelEvent( evt ) {
-		if ( typeof evt.stopPropagation != 'undefined' ) {
-			evt.stopPropagation();
-		}
-		if ( typeof evt.preventDefault != 'undefined' ) {
-			evt.preventDefault();
-		}
-		if ( typeof evt.cancelBubble != 'undefined' ) {
-			evt.cancelBubble = true;
-		}
-		return false;
-	}
+hope.register( 'hope.keyboard', function() {
 
-	function getEvent(evt) {
-		if ( !evt ) {
-			evt = window.event;
-		}
-		return evt;
-	}
-
-	function printKeyInfo(evt) {
-		printLog( getKey( evt ) );
-	}
-
-	function printLog( info ) {
-		var logDiv = document.createElement('div');
-		var logText = document.createTextNode( info )
-		logDiv.appendChild( logText );
-		document.getElementById('log').insertBefore( logDiv, document.getElementById('log').firstChild );
-	}
+	var self = this;
 
 	var keyCodes = [];
 	keyCodes[3]  = 'Cancel';
@@ -205,12 +166,12 @@
 				return '/';
 			case 'Apps' :
 				return 'Menu';
-			default :
+			default:
 				return key;
 		}
 	}
 
-	function getKey( evt ) {
+	this.getKey = function( evt ) {
 		var keyInfo = '';
 		if ( evt.ctrlKey && evt.keyCode != 17 ) {
 			keyInfo += 'Control+';
@@ -224,65 +185,29 @@
 		if ( evt.shiftKey && evt.keyCode != 16 ) {
 			keyInfo += 'Shift+';
 		}
-//		if ( typeof evt.key != 'undefined' && evt.key != 'MozPrintableKey' ) {
-//			keyInfo += convertKeyNames( evt.key );
-//		} else 
-		if ( evt.keyCode ) {
+		// evt.key turns shift+a into A, while keeping shiftKey, so it becomes Shift+A, instead of Shift+a.
+		// so while it may be the future, i'm not using it here.
+		if ( evt.charCode ) {
+			keyInfo += String.fromCharCode( evt.charCode ).toLowerCase();
+		} else if ( evt.keyCode ) {
 			if ( typeof keyCodes[evt.keyCode] == 'undefined' ) {
 				keyInfo += '('+evt.keyCode+')';
+			} else {
+				keyInfo += keyCodes[evt.keyCode];
 			}
-			keyInfo += keyCodes[evt.keyCode];
-		} else if ( evt.charCode ) {
-			keyInfo += String.fromCharCode( evt.charCode ).toLowerCase();
 		} else {
 			keyInfo += 'Unknown';
 		}
 		return keyInfo;
 	}
 
-	output.addEventListener( 'keydown', function(evt) {
-		evt = getEvent(evt);
-		printKeyInfo(evt);
-		switch ( evt.keyCode ) {
-			case 37:
-			case 38:
-			case 39:
-			case 40:
-			break;
-			default:
-				return cancelEvent(evt);
-			break;
-		}
-	}, true );
+	this.listen = function( el, key, callback, capture ) {
+		return hope.editor.events.listen( el, 'keydown', function(evt) {
+			var  pressedKey = self.getKey( evt );
+			if ( key == pressedKey ) {
+				callback.call( this, evt );
+			}
+		}, capture);
+	}
 
-	output.addEventListener( 'keyup', function(evt) {
-		evt = getEvent(evt);
-		switch ( evt.keyCode ) {
-			case 37:
-			case 38:
-			case 39:
-			case 40:
-			break;
-			default:
-				return cancelEvent(evt);
-			break;
-		}
-	}, true );
-	output.addEventListener( 'keypress', function(evt) {
-		evt = getEvent(evt);
-		printKeyInfo(evt);
-		return cancelEvent(evt);
-	}, true );
-	output.addEventListener( 'contextmenu', function(evt) {
-		evt = getEvent(evt);
-		return cancelEvent(evt);
-	}, true);
-	output.addEventListener( 'drop', function(evt) {
-		evt = getEvent(evt);
-		printLog('drop');
-		return cancelEvent(evt);
-	}, true);
-
-</script>
-</body>
-</html>
+} );

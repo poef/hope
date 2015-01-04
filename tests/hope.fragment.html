@@ -4,6 +4,7 @@
 	<script type="text/javascript" src="../src/hope.js"></script>
 	<script type="text/javascript" src="../src/hope.test.js"></script>
 	<script type="text/javascript" src="../src/hope.range.js"></script>
+	<script type="text/javascript" src="../src/hope.annotation.js"></script>
 	<script type="text/javascript" src="../src/hope.mime.js"></script>
 	<script type="text/javascript" src="../src/hope.fragment.text.js"></script>
 	<script type="text/javascript" src="../src/hope.fragment.annotations.js"></script>
@@ -24,23 +25,28 @@
 		var fragment = hope.fragment.create( content, annotations );
 		var fragmentStr = fragment + '';
 		var parsed = hope.fragment.parse( fragmentStr );
-		test.assertTrue( ''+parsed.annotations == annotations );
-		test.assertTrue( ''+parsed.content == content );
+		test.assertEquals( ''+parsed.annotations, annotations );
+		test.assertEquals( ''+parsed.text, content );
 	}
 
-	test.testCut = function() {
+	test.testDelete = function() {
 		var annotations = '0-10:h1\n12-20:p\n';
 		var content = "Een kopje.\n\nEn tekst\n";
 		var fragment = hope.fragment.create( content, annotations );
-		var cut = fragment.cut( hope.range.create( 0, 4) );
-		test.assertTrue( cut.content.length() == 4 );
-		test.assertTrue( fragment.content.length() == ( content.length - 4 ) );
-		var annotationsNew = '0-6:h1\n8-16:p\n';
-		var contentNew = "kopje.\n\nEn tekst\n";
-		test.assertTrue( ''+fragment.annotations == annotationsNew );
-		test.assertTrue( ''+fragment.content == contentNew );
+		var result = fragment.delete( hope.range.create( 0, 4) );
+		test.assertEquals( result.text+'', 'kopje.\n\nEn tekst\n' );
+		test.assertEquals( result.annotations+'', '0-6:h1\n8-16:p\n' );
 	}
 
+	test.testCopy = function() {
+		var annotations = '0-10:h1\n12-20:p\n';
+		var content = "Een kopje.\n\nEn tekst\n";
+		var fragment = hope.fragment.create( content, annotations );
+		var result = fragment.copy( [0, 4] );
+		test.assertEquals( result.text+'', 'Een ' );
+		test.assertEquals( result.annotations+'', '0-4:h1\n' );
+	}
+/*
 	test.testPaste = function() {
 		var annotations = '0-11:h1\n12-20:p\n';
 		var content = "Een kopje.\n\nEn tekst\n";
@@ -50,8 +56,8 @@
 		var cut = fragment.paste( hope.range.create(4,4), hope.fragment.create( pasteContent, pasteMarkup ) );
 		var annotationsNew = '0-18:h1\n4-10:em\n19-27:p\n';
 		var contentNew = "Een schuin kopje.\n\nEn tekst\n";
-		test.assertTrue( ''+fragment.annotations == annotationsNew );
-		test.assertTrue( ''+fragment.content == contentNew );
+		test.assertEquals( ''+fragment.annotations, annotationsNew );
+		test.assertEquals( ''+fragment.content, contentNew );
 //		document.write( hope.render.html.render( fragment.content+'', fragment.annotations+'') );
 	}
 
@@ -63,10 +69,11 @@
 		var cut = fragment.paste( hope.range.create(4,4), pasteContent );
 		var annotationsNew = '0-18:h1\n19-27:p\n';
 		var contentNew = "Een schuin kopje.\n\nEn tekst\n";
-		test.assertTrue( ''+fragment.annotations == annotationsNew );
-		test.assertTrue( ''+fragment.content == contentNew );
+		test.assertEquals( ''+fragment.annotations, annotationsNew );
+		test.assertEquals( ''+fragment.content, contentNew );
+		document.write('<pre>'+fragment+'</pre>');
 	}
-
+*/
 	test.run();
 
 </script>

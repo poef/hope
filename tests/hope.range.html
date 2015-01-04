@@ -17,44 +17,67 @@
 		var range3 = hope.range.create( range2 );
 		test.assertTrue( range1.compare( range2 ) == 0 );
 		test.assertTrue( range2.compare( range3 ) == 0 );
-		test.assertTrue( range2 != range3 );
+		test.assertTrue( range2 == range3 );
+	}
+
+	test.testImmutable = function() {
+		var rangeArg = hope.range.create( 2, 4 );
+		var methods = [
+			[ 'collapse' ],
+			[ 'delete', rangeArg ],
+			[ 'extend', 4 ],
+			[ 'grow', 4 ],
+			[ 'shrink', 4 ],
+			[ 'move', 4 ]
+		];
+		for ( var i=0, l=methods.length; i<l; i++ ) {
+			var range = hope.range.create(0,10);
+			var method = methods[i][0];
+			methods[i].shift();
+			range[ method ].apply( range, methods[i] );
+			test.assertTrue( range.start == 0 );
+			test.assertTrue( range.end == 10 );
+		}
+	}
+
+	test.testImmutable2 = function() {
+		var range = hope.range.create(0,10);
+		range.start = 5;
+		test.assertTrue( range.start == 0);		
 	}
 
 	test.testCollapse = function() {
 		var range = hope.range.create( 5, 20 );
-		range.collapse();
+		range = range.collapse();
 		test.assertTrue( range.end == 5 );
 		test.assertTrue( range.start == range.end );
 	}
 
-	test.testCut = function() {
+	test.testDelete = function() {
 		var range = hope.range.create( 5, 20 );
-		var newRange = range.cut( hope.range.create( 15, 25 ) );
-		test.assertTrue( range.start == 5);
-		test.assertTrue( range.end == 15 );
-		test.assertTrue( newRange.end == 5 );
-		test.assertTrue( newRange.start == 0);
+		var range = range.delete( hope.range.create( 15, 25 ) );
+		test.assertEquals( range.start, 5);
+		test.assertEquals( range.end, 15 );
 
 		var range = hope.range.create( 5, 20 );
-		newRange = range.cut( hope.range.create( 0, 10 ) );
-		test.assertTrue( range.start == 5 );
-		test.assertTrue( range.end == 15 );
-		test.assertTrue( newRange.end == 5 );
-		test.assertTrue( newRange.start == 0);
-
+		range = range.delete( hope.range.create( 0, 10 ) );
+		test.assertEquals( range.start, 5 );
+		test.assertEquals( range.end, 15 );
+	
 		var range = hope.range.create( 5, 20 );
-		newRange = range.cut( hope.range.create( 10, 15 ) );
-		test.assertTrue( range.start == 5 );
-		test.assertTrue( range.end == 15 );
-		test.assertTrue( newRange.end == 5 );
-		test.assertTrue( newRange.start == 0);
-
+		range = range.delete( hope.range.create( 10, 15 ) );
+		test.assertEquals( range.start, 5 );
+		test.assertEquals( range.end, 15 );
+	
 		var range = hope.range.create( 5, 20 );
-		newRange = range.cut( hope.range.create( 20, 15 ) );
-		test.assertTrue( range.start == 5 );
-		test.assertTrue( range.end == 20 );
-		test.assertTrue( newRange.end == 0 );
-		test.assertTrue( newRange.start == 0);
+		range = range.delete( hope.range.create( 20, 15 ) );
+		test.assertEquals( range.start, 5 );
+		test.assertEquals( range.end, 20 );
+	
+		var range = hope.range.create( 4, 8);
+		range = range.delete( hope.range.create( 2, 10 ) );
+		test.assertEquals( range.start, 4 );
+		test.assertEquals( range.end, 4 );
 	}
 
 	test.testCompare = function() {
@@ -62,9 +85,55 @@
 		var bigRange = hope.range.create( 15, 25 );
 		var smallRange = hope.range.create( 0, 15 );
 		var middleRange = hope.range.create( 10, 15 );
-		test.assertTrue( range.compare( bigRange ) == -1 );
-		test.assertTrue( range.compare( smallRange ) == 1 );
-		test.assertTrue( range.compare( middleRange ) == -1 );
+		test.assertEquals( range.compare( bigRange ), -1 );
+		test.assertEquals( range.compare( smallRange ), 1 );
+		test.assertEquals( range.compare( middleRange ), -1 );
+	}
+
+	test.testOverlaps = function() {
+		var range1 = hope.range.create(0,10);
+		var range2 = hope.range.create(5,15);
+		var range3 = hope.range.create(0,5);
+		var range4 = hope.range.create(10,15);
+		test.assertTrue( range1.overlaps( range2 ) );
+		test.assertFalse( range1.overlaps( range4 ) );
+		test.assertFalse( range3.overlaps( range2 ) );
+	}
+
+	test.testContains = function() {
+		var range1 = hope.range.create(0,10);
+		var range2 = hope.range.create(5,10);
+		var range3 = hope.range.create(9,11);
+		test.assertTrue( range1.contains(range2));
+		test.assertFalse( range1.contains(range3));
+	}
+
+	test.testOverlap = function() {
+		
+	}
+
+	test.testIsEmpty = function() {
+
+	}
+
+	test.testCopy = function() {
+
+	}
+
+	test.testExtend = function() {
+
+	}
+
+	test.testGrow = function() {
+
+	}
+
+	test.testShrink = function() {
+
+	}
+
+	test.testMove = function() {
+
 	}
 
 	test.run();
