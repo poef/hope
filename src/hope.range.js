@@ -57,6 +57,14 @@ hope.register( 'hope.range', function() {
 		return this.compare(range)==0;
 	}
 
+	hopeRange.prototype.smallerThan = function( range ) {
+		return ( this.compare( range ) == -1 );
+	}
+
+	hopeRange.prototype.largerThan = function( range ) {
+		return ( this.compare( range ) == 1 );
+	}
+
 	hopeRange.prototype.contains = function( range ) {
 		range = hope.range.create(range);
 		return this.start <= range.start && this.end >= range.end;
@@ -90,19 +98,61 @@ hope.register( 'hope.range', function() {
 		return new hopeRange(start, end); // FIXME: is this range( 0, 0 ) a useful return value when there is no overlap?
 	}
 
+	hopeRange.prototype.exclude = function( range ) {
+		// return parts of this that do not overlap with range
+		var left  = null;
+		var right = null;
+		if ( this.equals(range) ) {
+			// nop
+		} else if ( this.overlaps( range ) ) {
+			left  = new hopeRange( this.start, range.start );
+			right =	new hopeRange( range.end, this.end );
+			if ( left.isEmpty() ) {
+				left = null;
+			}
+			if ( right.isEmpty() ) {
+				right = null;
+			}
+		} else if ( this.largerThan(range) ) {
+			left = null;
+			right = right;
+		} else {
+			left = this;
+			right = left;
+		}
+		return [ left, right ];
+	}
+
+	hopeRange.prototype.excludeLeft = function( range ) {
+		return this.exclude(range)[0];
+	}
+
+	hopeRange.prototype.excludeRight = function( range ) {
+		return this.exclude(range)[1];
+	}
+
 	/** 
 	 * remove overlapping part of range from this range
-	 * [ 5 .. 20 ].cut( 10, 25 ) => [ 5 .. 10 ], [ 0 .. 10 ]
-		 * [ 5 .. 20 ].cut( 10, 15)	 => [ 5 .. 15 ], [ 0 .. 5 ]
-	 * [ 5 .. 20 ].cut( 5, 20 )	 => [ 5 .. 5 ], [ 0 .. 15 ]
-	 * [ 5 .. 20 ].cut( 0, 10 )	 => [ 10 .. 20 ], [ 0 .. 5 ]
+	 * [ 5 .. 20 ].delete( 10, 25 ) => [ 5 .. 10 ]
+	 * [ 5 .. 20 ].delete( 10, 15)	 => [ 5 .. 15 ]
+	 * [ 5 .. 20 ].delete( 5, 20 )	 => [ 5 .. 5 ]
+	 * [ 5 .. 20 ].delete( 0, 10 )	 => [ 0 .. 10 ] ?
 	 */
 	hopeRange.prototype.delete = function( range ) {
 		range = hope.range.create(range);
-		var cutRange = this.overlap( range );
-		var cutLength = cutRange.length;
-		var end = this.end - cutLength;
-		return new hopeRange( this.start, end );
+		var moveLeft = 0;
+		var end = this.end;
+		if ( this.overlaps(range) ) {
+			var cutRange = this.overlap( range );
+			var cutLength = cutRange.length;
+			end -= cutLength;
+		}
+		var result = new hopeRange( this.start, end );
+		var exclude = range.excludeLeft( this );
+		if ( exclude ) {
+			result = result.move( -exclude.length );
+		}
+		return result;
 	}
 
 	hopeRange.prototype.copy = function( range ) {

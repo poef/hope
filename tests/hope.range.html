@@ -61,8 +61,8 @@
 
 		var range = hope.range.create( 5, 20 );
 		range = range.delete( hope.range.create( 0, 10 ) );
-		test.assertEquals( range.start, 5 );
-		test.assertEquals( range.end, 15 );
+		test.assertEquals( range.start, 0 );
+		test.assertEquals( range.end, 10 );
 	
 		var range = hope.range.create( 5, 20 );
 		range = range.delete( hope.range.create( 10, 15 ) );
@@ -76,8 +76,8 @@
 	
 		var range = hope.range.create( 4, 8);
 		range = range.delete( hope.range.create( 2, 10 ) );
-		test.assertEquals( range.start, 4 );
-		test.assertEquals( range.end, 4 );
+		test.assertEquals( range.start, 2 );
+		test.assertEquals( range.end, 2 );
 	}
 
 	test.testCompare = function() {
