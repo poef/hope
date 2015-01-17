@@ -62,15 +62,73 @@ hope.register( 'hope.fragment.annotations', function() {
 	};
 
 	hopeAnnotationList.prototype.grow = function( position, size ) {
-		var list = this.list.slice();
-		for ( var i=0, l=list.length; i<l; i++ ) {
-			if ( list[i].range.start > position ) {
-				var range = list[i].range.move( size, position );
-				list[i] = hope.annotation.create( range, list[i].tag );
-			} else if ( list[i].range.end >= position ) {
-				var range = list[i].range.grow( size );
-				list[i] = hope.annotation.create( range, list[i].tag );
+		function getBlockIndexes(list, index, position) {
+			var blockIndexes = [];
+			for ( var i=index-1; i>=0; i-- ) {
+				if ( list[i].range.contains([position-1, position]) && list[i].isBlock() ) {
+					blockIndexes.push(i);
+				}
 			}
+			return blockIndexes;
+		}
+
+		var list = this.list.slice();
+		var removeRange = false;
+		var growRange = false;
+		var removeList = [];
+		if ( size < 0 ) {
+			var removeRange = hope.range.create( position + size, position );
+		} else {
+			var growRange = hope.range.create( position, position + size );
+		}
+		for ( var i=0, l=list.length; i<l; i++ ) {
+			if ( removeRange ) { // && removeRange.overlaps( list[i].range ) ) {
+				if ( removeRange.contains( list[i].range ) ) {
+					removeList.push(i);
+				} else if ( removeRange.end >= list[i].range.start && removeRange.start <= list[i].range.start ) {
+					// range to remove overlaps start of this range, but is not equal
+					if ( list[i].isBlock() ) {
+						// block annotation must be merged with previous annotation, if available 
+						// get block annotation at start of removeRange
+						var prevBlockIndexes = getBlockIndexes(list, i, removeRange.start);
+						if ( prevBlockIndexes.length == 0 ) {
+							// no block element in removeRange.start, so just move this block element
+							list[i] = hope.annotation.create( list[i].range.delete( removeRange ), list[i].tag );
+						} else {
+							// prevBlocks must now contain this block
+							for ( var ii=0, ll=prevBlockIndexes.length; ii<ll; ii++ ) {
+								var prevBlockIndex = prevBlockIndexes[ii];
+								var prevBlock = list[ prevBlockIndex ];
+								list[ prevBlockIndex ] = hope.annotation.create(
+									hope.range.create( prevBlock.range.start, list[i].range.end ).delete( removeRange )
+									, prevBlock.tag
+								);
+							}
+							removeList.push(i);
+						}
+					} else {
+						// inline annotations simply shrink
+						list[i] = hope.annotation.create( list[i].range.delete( removeRange ), list[i].tag );
+					}
+				} else { //if ( removeRange.start <= list[i].range.end && removeRange.end >= list[i].range.end ) {
+					// range to remove overlaps end of this range, but is not equal
+					// if this range needs to be extended, that will done when we find the next block range
+					// so just shrink this range
+					list[i] = hope.annotation.create( list[i].range.delete( removeRange ), list[i].tag );
+				}
+			} else if (growRange) {
+				if ( list[i].range.start > position ) {
+					var range = list[i].range.move( size, position );
+					list[i] = hope.annotation.create( range, list[i].tag );
+				} else if ( list[i].range.end >= position ) {
+					var range = list[i].range.grow( size );
+					list[i] = hope.annotation.create( range, list[i].tag );
+				}
+			}
+		}
+		// now remove indexes in removeList from list
+		for ( var i=removeList.length-1; i>=0; i--) {
+			list.splice( removeList[i], 1);
 		}
 		return new hopeAnnotationList(list).clean();
 	};
@@ -117,7 +175,7 @@ hope.register( 'hope.fragment.annotations', function() {
 			if ( listRange.equals(range) || range.contains(listRange) ) {
 				// range encompasses annotation range
 				list[i] = null;
-				remove.push(i);				
+				remove.push(i);
 			} else if (listRange.start<range.start && listRange.end>range.end) {
 				// range is enclosed entirely in annotation range
 				list[i] = hope.annotation.create(
@@ -152,7 +210,7 @@ hope.register( 'hope.fragment.annotations', function() {
 
 	hopeAnnotationList.prototype.delete = function( range ) {
 		range = hope.range.create(range);
-		return this.grow( range.start, -range.length );
+		return this.grow( range.end, -range.length );
 	};
 
 	hopeAnnotationList.prototype.copy = function( range ) {
@@ -171,13 +229,27 @@ hope.register( 'hope.fragment.annotations', function() {
 		return new hopeAnnotationList( copy );
 	}
 
+	hopeAnnotationList.prototype.getAt = function( position ) {
+		if ( !position ) {
+			position = 1;
+		}
+		range = hope.range.create(position-1, position);
+		var matches = [];
+		for ( var i=0, l=this.list.length; i<l; i++ ) {
+			if ( this.list[i].range.overlaps( range ) ) {
+				matches.push( this.list[i] )
+			}
+		}
+		return new hopeAnnotationList( matches );		
+	}
+
 	hopeAnnotationList.prototype.has = function(range, tag) {
 		range = hope.range.create(range);
 		for ( var i=0,l=this.list.length; i<l; i++ ) {
 			if ( this.list[i].range.overlaps( range ) 
 				&& this.list[i].has( tag )
 			) {
-				return true;
+				return this.list[i];
 			}
 		}
 		return false;

@@ -35,6 +35,14 @@
 		test.assertEquals( result+'', '0-5:h1\n7-15:p\n' );		
 	}
 
+	test.testDeleteBlock = function() {
+		var annotations = '0-10:h1\n12-20:p\n';
+		var annotationsFragment = hope.fragment.annotations.create( annotations );
+		var result = annotationsFragment.delete( [ 5, 15 ] );
+		test.assertEquals( annotationsFragment+'', annotations );
+		test.assertEquals( result+'', '0-10:h1\n' );		
+	}
+
 	test.testCopy = function() {
 		var annotations = '0-10:h1\n4-8:em\n';
 		// 1111111111
@@ -63,7 +71,7 @@
 	test.testHas = function() {
 		var annotations = '0-10:h1\n4-8:em\n12-20:p\n';
 		var annotationsFragment = hope.fragment.annotations.create( annotations );
-		test.assertTrue( annotationsFragment.has( [ 5, 6 ], 'em' ) );
+		test.assertEquals( annotationsFragment.has( [ 5, 6 ], 'em' ), annotationsFragment.list[1] );
 		test.assertFalse( annotationsFragment.has( [ 5, 6 ], 'strong' ) )
 		test.assertFalse( annotationsFragment.has( [ 10, 11], 'h1' ) );	
 	}
