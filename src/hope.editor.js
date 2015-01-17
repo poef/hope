@@ -122,6 +122,37 @@ hope.register( 'hope.editor', function() {
 	}
 
 
+	hopeEditor.prototype.getBlockAnnotation = function( position ) {
+		var annotations = this.fragment.annotations.getAt( position );
+		for ( var i=annotations.length()-1; i>=0; i--) {
+			if ( this.isBlockTag( annotations.get(i).tag ) ) {
+				// this is the nearest defined block annotation
+				return annotations.get(i);
+			}
+		}
+		return null; // FIXME: define a null block annotation and return it with full range of document
+	}
+
+	hopeEditor.prototype.isBlockTag = function( tag ) {
+		tag = hope.annotation.stripTag(tag);
+		return ['h1','h2','h3','p','li'].includes(tag);
+	}
+
+	hopeEditor.prototype.getNextBlockTag = function( tag ) {
+		tag = hope.annotation.stripTag(tag);
+		var tagOrder = {
+			'h1' : 'p',
+			'h2' : 'p',
+			'h3' : 'p',
+			'p'  : 'p',
+			'li' : 'li'
+		};
+		if ( typeof tagOrder[tag] != 'undefined' ) {
+			return tagOrder[tag];
+		}
+		return 'p';
+	}
+
 	hopeEditor.prototype.commands = {
 		'Control+b': function(range) {
 			this.fragment = this.fragment.toggle(range, 'strong');
@@ -133,6 +164,9 @@ hope.register( 'hope.editor', function() {
 			if ( range.isEmpty() ) {
 				range = range.extend(1, -1);
 			}
+			// check if range extends over multiple block annotations
+			// if so remove all block annotations except the first
+			// and expand that to cover full range of first upto last block annotation
 			this.fragment = this.fragment.delete( range );
 			this.selection.collapse().move(-1);
 		},
@@ -143,6 +177,35 @@ hope.register( 'hope.editor', function() {
 			this.fragment = this.fragment.delete( range );
 			this.selection.collapse();
 		},
+		'Shift+Enter' : function(range) {
+			this.fragment = this.fragment
+				.delete( range )
+				.insert( range.start, "\n" )
+				.apply( [ range.start, range.start + 1 ], 'br' );
+			this.selection.collapse().move(1);
+		},
+		'Enter' : function(range) {
+			var br = this.fragment.has( [range.start-1, range.start], 'br' );
+			if ( br ) {
+				var blockAnnotation = this.getBlockAnnotation( range.start );
+				// close it and find which annotation to apply next
+				var closingAnnotation = hope.annotation.create( [ blockAnnotation.range.start, br.range.start ], blockAnnotation.tag );
+				var openingAnnotation = hope.annotation.create( [ range.start, blockAnnotation.range.end + 1 ], this.getNextBlockTag( blockAnnotation.tag ) );
+				this.fragment = this.fragment
+					.remove( br.range, br.tag )
+					.remove( blockAnnotation.range, blockAnnotation.tag )
+					.insert(range.start, '\n')
+					.apply( closingAnnotation.range, closingAnnotation.tag )
+					.apply( openingAnnotation.range, openingAnnotation.tag )
+				;
+			} else {
+				this.fragment = this.fragment
+					.delete( range )
+					.insert( range.start, "\n" )
+					.apply( [ range.start, range.start + 1 ], 'br' );
+			}
+			this.selection.collapse().move(1);
+		}
 	};
 
 	hopeEditor.prototype.update = function() {
