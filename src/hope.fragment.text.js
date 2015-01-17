@@ -15,7 +15,7 @@ hope.register( 'hope.fragment.text', function() {
 		range = hope.range.create(range);
 		// cut range from content, return the cut content
 		if ( range.start >= range.end ) {
-			return new hopeTextFragment('');
+			return this;
 		} else {
 			return new hopeTextFragment( this.content.slice( 0, range.start ) + this.content.slice( range.end ) );
 		}
