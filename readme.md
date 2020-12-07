@@ -1,5 +1,7 @@
 # Hope is an alternative to markup languages.
 
+**Note: this project is superceded by [cobalt](https://github.com/poef/cobalt)**
+
 It is currently a proof of concept prototype to see where the ideas of Ted Nelson can lead us.
 
 Ted Nelson came up with the term Hypertext and famously defined 17 rules that a Hypertext system should conform to. His attempts to implement these in his Xanadu system haven't resulted in a finished system. But what if it had?
