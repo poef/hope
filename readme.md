@@ -44,7 +44,7 @@ The ones that come closest to Hope are:
 - [Ool - Out-of-line XML](http://simonstl.com/projects/ool/)
 - [Multi-Version Documents](http://multiversiondocs.blogspot.nl/)
 
-#Goals / Hopes
+# Goals / Hopes
 I've been writing web software, frontend and backend since 1995 and I found that some problems haven't gone away.The most obvious one is security, e.g. Cross-Site Scripting attacks (XSS). But some problems have only grown. The entire knowledge stack needed to write web applications today is vastly more expansive and complex than in 1995, or even 2001. No browser even attempts to fully implement the current standards, or even fix bugs in years old modules. Worse the standard itself is years in the making, not just because of politics but also because of the inherent complexity of it.
 
 What the web needs is not mode high-level constructs and api's, but less. Web browsers shouldn't be trying to be full operating systems /and/ all services in one monolythic application.
@@ -53,7 +53,7 @@ Take the contenteditable/designMode feature of modern browsers. Not only is the 
 
 My hope is that hope will show that most of that complexity isn't needed, if the data type you are operating on is inherently less complex. So far, it looks like this might in fact be true. 
 
-#References
+# References
 - [Core Range Algebra](http://conferences.idealliance.org/extreme/html/2002/Nicol01/EML2002Nicol01.html)
 - [Embedded Markup Considered Harmfull](http://www.xml.com/pub/a/w3j/s3.nelson.html)
 - [Xanalogical Media: Needed Now More Than Ever](http://www.xanadu.net/NOWMORETHANEVER/XuSum99.html)
